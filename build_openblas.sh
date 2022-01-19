@@ -1,7 +1,6 @@
 #!/bin/bash
+set -euxo pipefail
 
-# Required with Xcode 12 beta:
-export M4=$(xcrun -f m4)
 OSX_SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
 IOS_SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
 SIM_SDKROOT=$(xcrun --sdk iphonesimulator --show-sdk-path)
@@ -12,12 +11,6 @@ USE_FORTRAN=0
 if [ -e "/usr/local/aarch64-apple-darwin20/lib/libgfortran.dylib" ];then
 	USE_FORTRAN=1
 fi
-# OSX 11: required for many things
-if [ -z "${LIBRARY_PATH}" ]; then
-	export LIBRARY_PATH="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
-else
-	export LIBRARY_PATH="$LIBRARY_PATH:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
-fi
 
 # Using Xcode to create frameworks from archived libraries (lib.a) is failing randomly. 
 # We stick to creating frameworks from dynamic libraries.
@@ -27,6 +20,7 @@ fi
 # We have modified (slightly) Makefile and Makefile.system
 pushd OpenBLAS
 # Having the exact same script inside Xcode does not work. Strange but true.
+
 # iphoneos:
 if [ $USE_FORTRAN == 0 ];
 then
@@ -60,26 +54,28 @@ else
 	# What if you don't give a target? (no assembly code, obviously).
     # make has created the libopenblas....dylib with no platform. Let's do it:
 	pushd exports
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/ -dynamic -dylib -arch arm64 -dylib_install_name /Users/holzschu/src/Xcode_iPad/Python-aux/OpenBLAS/exports/../libopenblas.0.dylib -all_load -headerpad_max_install_names -weak_reference_mismatches non-weak -o ../libopenblas_armv8p-r0.3.13.dev.dylib -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1 -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1/../../../../aarch64-apple-darwin20/lib -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1 -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1/../../../../aarch64-apple-darwin20/lib -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1 -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1/../../../../aarch64-apple-darwin20/lib ../libopenblas_armv8p-r0.3.13.dev.a -exported_symbols_list osx.def -lSystem -lgfortran -lemutls_w -lemutls_w -lSystem -lgfortran -lemutls_w -lemutls_w -lSystem -lgfortran -lemutls_w -lgcc -lm -lemutls_w -lgcc -lSystem -lgcc -platform_version ios 11.0 11.0
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/ -dynamic -dylib -arch arm64 -dylib_install_name /Users/holzschu/src/Xcode_iPad/Python-aux/OpenBLAS/exports/../libopenblas.0.dylib -all_load -headerpad_max_install_names -weak_reference_mismatches non-weak -o ../libopenblas_armv8p-r0.3.19.dylib -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1 -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1/../../../../aarch64-apple-darwin20/lib -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1 -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1/../../../../aarch64-apple-darwin20/lib -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1 -L/usr/local/lib/gcc/aarch64-apple-darwin20/10.2.1/../../../../aarch64-apple-darwin20/lib ../libopenblas_armv8p-r0.3.19.a -exported_symbols_list osx.def -lSystem -lgfortran -lemutls_w -lemutls_w -lSystem -lgfortran -lemutls_w -lemutls_w -lSystem -lgfortran -lemutls_w -lgcc -lm -lemutls_w -lgcc -lSystem -lgcc -platform_version ios 11.0 11.0
 	popd
 fi
  mkdir -p build-iphoneos
- cp libopenblas_armv8p-r0.3.13.dev.a build-iphoneos/libopenblas.a
- cp libopenblas_armv8p-r0.3.13.dev.dylib build-iphoneos/libopenblas.dylib
+ cp libopenblas_armv8p-r0.3.19.a build-iphoneos/libopenblas.a
+ cp libopenblas_armv8p-r0.3.19.dylib build-iphoneos/libopenblas.dylib
 # for the headers:
  make BINARY=64 HOSTCC="clang -isysroot ${OSX_SDKROOT}" CC="clang" CFLAGS="-miphoneos-version-min=11.0 -isysroot ${IOS_SDKROOT} -arch arm64 -fembed-bitcode" install PREFIX=./install
+
 # simulator
  make BINARY=64 HOSTCC="clang -isysroot ${OSX_SDKROOT}" \
  	 CC="clang" \
- 	 CFLAGS="-mios-simulator-version-min=11.0 -isysroot ${SIM_SDKROOT} -arch x86_64 -fembed-bitcode" \
+ 	 CFLAGS="-mios-simulator-version-min=11.0 -isysroot ${SIM_SDKROOT} -arch arm64 -fembed-bitcode" \
  	 NOFORTRAN=1 clean
  make BINARY=64 HOSTCC="clang -isysroot${OSX_SDKROOT}" \
  	 CC="clang" \
- 	 CFLAGS="-mios-simulator-version-min=11.0 -isysroot ${SIM_SDKROOT} -arch x86_64 -fembed-bitcode" \
+ 	 CFLAGS="-mios-simulator-version-min=11.0 -isysroot ${SIM_SDKROOT} -arch arm64 -fembed-bitcode" \
  	 NOFORTRAN=1 libs shared
   mkdir -p build-iphonesimulator
- cp libopenblas_haswellp-r0.3.13.dev.a build-iphonesimulator/libopenblas.a
- cp libopenblas_haswellp-r0.3.13.dev.dylib build-iphonesimulator/libopenblas.dylib
+ cp libopenblas_vortexp-r0.3.19.a build-iphonesimulator/libopenblas.a
+ cp libopenblas_vortexp-r0.3.19.dylib build-iphonesimulator/libopenblas.dylib
+
 # OSX: 
 if [ $USE_FORTRAN == 0 ];
 then
@@ -98,8 +94,8 @@ else
 		AR="$(xcrun -f ar)" all
 fi
   mkdir -p build-osx
- cp libopenblas_skylakexp-r0.3.13.dev.a build-osx/libopenblas.a
- cp libopenblas_skylakexp-r0.3.13.dev.dylib build-osx/libopenblas.dylib
+ cp libopenblas_vortexp-r0.3.19.a build-osx/libopenblas.a
+ cp libopenblas_vortexp-r0.3.19.dylib build-osx/libopenblas.dylib
 popd
 
 binary=openblas
