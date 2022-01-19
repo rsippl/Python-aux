@@ -1,11 +1,11 @@
 #!/bin/bash
+set -euxo pipefail
 
 # Currently, libffi and libzmq scripts produce static libraries. 
 # libffi:
-export M4=$(xcrun -f m4)
 pushd libffi
-# we need to patch libffi to allow compilation with Xcode12, but only once:
-# patch -p1 < ../libffi.patch 
+./autogen.sh
+python3 generate-darwin-source-and-headers.py --only-ios
 xcodebuild -project libffi.xcodeproj -target libffi-iOS -sdk iphoneos -arch arm64 -configuration Debug -quiet
 xcodebuild -project libffi.xcodeproj -target libffi-iOS -sdk iphonesimulator -arch x86_64 -configuration Debug -quiet
 # Python also need ffi_common.h and fficonfig.h
