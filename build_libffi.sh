@@ -7,7 +7,7 @@ pushd libffi
 ./autogen.sh
 python3 generate-darwin-source-and-headers.py --only-ios
 xcodebuild -project libffi.xcodeproj -target libffi-iOS -sdk iphoneos -arch arm64 -configuration Debug -quiet
-xcodebuild -project libffi.xcodeproj -target libffi-iOS -sdk iphonesimulator -arch x86_64 -configuration Debug -quiet
+xcodebuild -project libffi.xcodeproj -target libffi-iOS -sdk iphonesimulator -arch arm64 -configuration Debug -quiet
 # Python also need ffi_common.h and fficonfig.h
 cp build_iphoneos-arm64/fficonfig.h build/Debug-iphoneos/include/ffi/
 cp include/ffi_common.h build/Debug-iphoneos/include/ffi/ 
