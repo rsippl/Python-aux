@@ -1,10 +1,10 @@
 #!/bin/bash
+set -euxo pipefail
 
 # libzmq:
 # create the static libraries
-export M4=$(xcrun -f m4)
 pushd libzmq
-make distclean
+if [[ -e Makefile ]]; then make distclean; fi
 sh builds/ios/build_ios.sh
 popd
 # then, merge them into XCframeworks:
